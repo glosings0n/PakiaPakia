@@ -2,6 +2,7 @@ import { context, reddit } from '@devvit/web/server';
 import { dayKey, dayNumber, formatDay } from '../../shared/dates';
 import { ITEMS } from '../../shared/items';
 import { houseReceiptFor } from '../../shared/puzzles';
+import { describeRequest } from '../../shared/requests';
 import type { DailyPostData, Puzzle } from '../../shared/types';
 import {
   getDayPostId,
@@ -30,6 +31,8 @@ export const getOrChooseDayPuzzle = async (
         author: winner.author,
         items: winner.items,
         difficulty: winner.difficulty,
+        request: winner.request ?? null,
+        note: winner.note ?? null,
       }
     : houseReceiptFor(day);
   await setDayPuzzle(day, puzzle);
@@ -57,6 +60,11 @@ const postTitle = (data: DailyPostData): string => {
 const receiptText = (puzzle: Puzzle): string =>
   puzzle.items.map((id) => `- ${ITEMS[id].name}`).join('\n');
 
+const requestText = (puzzle: Puzzle): string =>
+  puzzle.request
+    ? `\n\nSpecial request: ${describeRequest(puzzle.request)}${puzzle.note ? ` "${puzzle.note}"` : ''}`
+    : '';
+
 /** Creates the interactive post for a day and announces the customer in a sticky comment. */
 export const createDailyPost = async (
   day: string = dayKey()
@@ -69,7 +77,7 @@ export const createDailyPost = async (
     postData: data,
     styles: { backgroundColor: '#E9D8BEFF', backgroundColorDark: '#1F1A16FF' },
     textFallback: {
-      text: `Today's receipt: "${puzzle.title}". Pack every item into a 5x5 bag without breaking the house rules.\n\n${receiptText(puzzle)}`,
+      text: `Today's receipt: "${puzzle.title}". Pack every item into a 5x5 bag without breaking the house rules.\n\n${receiptText(puzzle)}${requestText(puzzle)}`,
     },
   });
   await Promise.all([savePostData(post.id, data), setDayPostId(day, post.id)]);
@@ -80,7 +88,7 @@ export const createDailyPost = async (
   try {
     const comment = await reddit.submitComment({
       id: post.id,
-      text: `${intro}\n\nPost your time below, but keep it spoiler-free: no bag layouts. Want your own groceries to be tomorrow's puzzle? Solve today's bag, then tap **Write a receipt**.`,
+      text: `${intro}${requestText(puzzle)}\n\nPost your time below, but keep it spoiler-free: no bag layouts. Want your own groceries to be tomorrow's puzzle? Solve today's bag, then tap **Write a receipt**.`,
       runAs: 'APP',
     });
     await comment.distinguish(true);

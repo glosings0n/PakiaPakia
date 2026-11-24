@@ -8,6 +8,11 @@ import { Hono } from 'hono';
 import { dayKey, dayNumber, isDayKey } from '../../src/shared/dates';
 import { houseReceiptFor } from '../../src/shared/puzzles';
 import { checkReceipt } from '../../src/shared/receipts';
+import {
+  REQUEST_INFO,
+  REQUEST_KINDS,
+  type SpecialRequest,
+} from '../../src/shared/requests';
 import type { ItemId } from '../../src/shared/types';
 import { getOrChooseDayPuzzle } from '../../src/server/core/daily';
 import { addReceipt, castVote, keys } from '../../src/server/redis';
@@ -23,17 +28,41 @@ app.post('/__dev/reset', async (c) => {
   return c.json({ status: 'ok' });
 });
 
+/** The first special request that makes this sample receipt valid. */
+const withRequest = (title: string, items: ItemId[], note: string) => {
+  const singles = [...new Set(items)].filter(
+    (id) => items.filter((x) => x === id).length === 1
+  );
+  for (const kind of REQUEST_KINDS) {
+    for (const item of singles) {
+      const others = REQUEST_INFO[kind].pair
+        ? singles.filter((x) => x !== item)
+        : [undefined];
+      for (const other of others) {
+        const request: SpecialRequest = other
+          ? { kind, item, other }
+          : { kind, item };
+        const check = checkReceipt({ title, items, request, note });
+        if (check.ok) return check;
+      }
+    }
+  }
+  return null;
+};
+
 /** Adds three community receipts from fake players, with a few votes. */
 app.post('/__dev/seed', async (c) => {
   const samples: {
     author: string;
     title: string;
+    note?: string;
     items: ItemId[];
     votes: number;
   }[] = [
     {
       author: 'pantry_queen',
       title: 'Hosting my in-laws',
+      note: 'Local test note',
       items: [
         'turkey',
         'wine',
@@ -81,14 +110,16 @@ app.post('/__dev/seed', async (c) => {
   ];
   const created: string[] = [];
   for (const sample of samples) {
-    const check = checkReceipt({ title: sample.title, items: sample.items });
-    if (!check.ok) continue;
+    const check = withRequest(sample.title, sample.items, sample.note ?? '');
+    if (!check) continue;
     const receipt = await addReceipt({
       title: check.title,
       author: sample.author,
       authorId: `t2_${sample.author}`,
       items: check.items,
       difficulty: check.difficulty,
+      request: check.request,
+      note: check.note,
     });
     for (let v = 0; v < sample.votes; v++)
       await castVote(dayKey(), `t2_voter${v}_${receipt.id}`, receipt.id);

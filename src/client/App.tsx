@@ -265,9 +265,15 @@ const Game = ({
     setOnboarded(true);
     setFlag(ONBOARDED_KEY);
     setIntroRules(true);
-    say('Nice! Now mind the four house rules above.', 'good', 3200);
+    say(
+      puzzle.request
+        ? 'Nice! Mind the house rules above and the request below.'
+        : 'Nice! Now mind the four house rules above.',
+      'good',
+      3200
+    );
     window.setTimeout(() => setIntroRules(false), 1200);
-  }, [onboarded, say]);
+  }, [onboarded, say, puzzle.request]);
 
   const place = useCallback(
     (p: Placement) => {
@@ -566,7 +572,9 @@ const Game = ({
 
   /* ----- Status line ----- */
   const status: Flash = (() => {
-    if (flash) return flash;
+    // A broken rule always beats a friendly hint.
+    if (flash && (flash.tone === 'warn' || evaluation.conflicts.length === 0))
+      return flash;
     if (offline && !server)
       return { text: 'Offline: your result will not be saved.', tone: 'warn' };
     if (phase !== 'playing')
@@ -703,6 +711,7 @@ const Game = ({
         selected={state.selected}
         rot={state.rot}
         pulse={pulse}
+        requestBroken={brokenRules.has('request')}
         hidden={ghost && ghost.from === 'bag' ? ghost.i : null}
         onPointerDown={beginDrag}
       />

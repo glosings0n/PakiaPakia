@@ -1,3 +1,5 @@
+import type { SpecialRequest } from './requests';
+
 /** Bag dimensions. Row 0 is the top of the bag, row GRID_ROWS - 1 is the floor. */
 export const GRID_COLS = 5;
 export const GRID_ROWS = 5;
@@ -57,6 +59,10 @@ export type Puzzle = {
   author: string | null;
   items: ItemId[];
   difficulty: Difficulty;
+  /** The customer's special request: one extra rule for this receipt. */
+  request?: SpecialRequest | null;
+  /** Optional handwritten note from the customer who wrote the receipt. */
+  note?: string | null;
 };
 
 /** One item instance placed in the bag. `i` indexes into `Puzzle.items`. */
@@ -67,7 +73,7 @@ export type Placement = {
   rot: boolean;
 };
 
-export type RuleId = 'heavy' | 'fragile' | 'temperature' | 'upright';
+export type RuleId = 'heavy' | 'fragile' | 'temperature' | 'upright' | 'request';
 
 export type Conflict = {
   rule: RuleId;

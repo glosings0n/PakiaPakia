@@ -641,6 +641,89 @@ input:focus-visible {
   font-size: 11px;
 }
 
+/* The customer's special request, handwritten on the receipt. */
+.request-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-family: var(--font-hand);
+  font-size: 16px;
+  line-height: 1.15;
+  color: var(--ink);
+  transition: color 0.15s;
+}
+
+.request-line .hi {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--upright);
+}
+
+.request-line.broken {
+  color: var(--accent);
+  animation: wobble 0.4s;
+}
+
+.request-line.broken .hi {
+  color: var(--accent);
+}
+
+.request-note {
+  color: #7a6c5d;
+}
+
+.req-kinds {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.req-chip {
+  height: 34px;
+  border-radius: 10px;
+  border: 2px solid var(--ink);
+  background: var(--chip);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+.req-chip[aria-pressed='true'] {
+  background: var(--upright);
+  border-color: var(--upright);
+  color: #fff;
+}
+
+.req-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.req-item {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 4px;
+  border-radius: 10px;
+  border: 2px solid var(--ink);
+  background: #fffdf7;
+  box-sizing: border-box;
+}
+
+.req-item[aria-pressed='true'] {
+  border-color: var(--upright);
+  background: #efe9fb;
+}
+
+.req-item .count-badge {
+  background: var(--upright);
+}
+
 .tray {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -681,7 +764,7 @@ input:focus-visible {
 }
 
 .tile.pulse {
-  animation: pulse 1.4s infinite;
+  animation: pulse 1.4s 3;
 }
 
 .tile-art {

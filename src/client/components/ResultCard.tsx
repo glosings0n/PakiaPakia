@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { GameResult, LeaderRow, ReceiptCandidate } from '../../shared/api';
 import { formatDay, formatDuration, msUntilNextDay } from '../../shared/dates';
+import { describeRequest } from '../../shared/requests';
 import type { Puzzle } from '../../shared/types';
 import { DIFFICULTY_LABELS } from '../../shared/types';
 import { Icon, ItemArt } from './Art';
@@ -81,6 +82,17 @@ const CandidateCard = ({
           {DIFFICULTY_LABELS[candidate.difficulty]}
         </span>
       </div>
+      {candidate.request && (
+        <p className="request-line !mb-1 !text-[14px]">
+          <Icon name="request" size={14} />
+          <span>
+            {describeRequest(candidate.request)}
+            {candidate.note && (
+              <span className="request-note"> “{candidate.note}”</span>
+            )}
+          </span>
+        </p>
+      )}
       <div className="mini-items">
         {candidate.items.map((id, k) => (
           <span key={k}>

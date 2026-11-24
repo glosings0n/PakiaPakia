@@ -1,4 +1,5 @@
 import { isItemId } from './items';
+import { isSpecialRequest } from './requests';
 import type { DailyPostData, Puzzle } from './types';
 
 const isObject = (v: unknown): v is Record<string, unknown> =>
@@ -13,7 +14,9 @@ export const isPuzzle = (v: unknown): v is Puzzle =>
   v.items.every(isItemId) &&
   (v.difficulty === 'easy' ||
     v.difficulty === 'medium' ||
-    v.difficulty === 'hard');
+    v.difficulty === 'hard') &&
+  (v.request === undefined || v.request === null || isSpecialRequest(v.request)) &&
+  (v.note === undefined || v.note === null || typeof v.note === 'string');
 
 export const isDailyPostData = (v: unknown): v is DailyPostData =>
   isObject(v) &&

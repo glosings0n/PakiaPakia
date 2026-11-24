@@ -50,6 +50,15 @@ export const HelpSheet = ({ onClose }: { onClose: () => void }) => (
       ))}
       <div className="help-row">
         <span className="ico">
+          <Icon name="request" size={20} />
+        </span>
+        <span>
+          Each customer adds one special request, written on the receipt. Follow
+          it too.
+        </span>
+      </div>
+      <div className="help-row">
+        <span className="ico">
           <Icon name="receipt" size={20} />
         </span>
         <span>Done? Vote for tomorrow’s receipt, or write your own.</span>

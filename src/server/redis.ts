@@ -11,6 +11,7 @@ import type {
 } from '../shared/types';
 import { GRID_CELLS } from '../shared/types';
 import { isDailyPostData, isPuzzle } from '../shared/guards';
+import type { SpecialRequest } from '../shared/requests';
 
 /** All Redis keys in one place. Day keys are YYYY-MM-DD (UTC). */
 export const keys = {
@@ -338,6 +339,8 @@ export type StoredReceipt = {
   authorId: string;
   items: ItemId[];
   difficulty: Difficulty;
+  request?: SpecialRequest | null;
+  note?: string | null;
   createdAt: number;
 };
 
@@ -391,6 +394,8 @@ export const toCandidate = (
   author: receipt.author,
   items: receipt.items,
   difficulty: receipt.difficulty,
+  request: receipt.request ?? null,
+  note: receipt.note ?? null,
   votes,
 });
 

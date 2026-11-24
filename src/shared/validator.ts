@@ -1,4 +1,5 @@
 import { footprint, hasTag, ITEMS } from './items';
+import { boxOf, pairOk, REQUEST_INFO, requestIndices, unaryOk } from './requests';
 import type { Conflict, ItemId, Placement, Puzzle } from './types';
 import { GRID_COLS, GRID_ROWS } from './types';
 
@@ -11,6 +12,7 @@ import { GRID_COLS, GRID_ROWS } from './types';
  * - Fragile:     nothing may sit anywhere above it in the same column.
  * - Temperature: cold and hot items may not touch side by side or top to bottom.
  * - Upright:     cannot be turned on its side.
+ * Plus the receipt's optional special request (see requests.ts).
  */
 
 export type BagCells = (number | null)[][];
@@ -135,7 +137,31 @@ export const findConflicts = (
       }
     }
   }
+
+  const broken = requestConflict(puzzle, placements);
+  if (broken) conflicts.push(broken);
   return conflicts;
+};
+
+/** The special request, checked as soon as the items it names are in the bag. */
+const requestConflict = (
+  puzzle: Puzzle,
+  placements: readonly Placement[]
+): Conflict | null => {
+  const request = puzzle.request;
+  if (!request) return null;
+  const { x, y } = requestIndices(puzzle.items, request);
+  const px = placements.find((p) => p.i === x);
+  if (!px) return null;
+  const a = boxOf(request.item, px);
+  if (!REQUEST_INFO[request.kind].pair) {
+    return unaryOk(request.kind, a) ? null : { rule: 'request', items: [x] };
+  }
+  const py = placements.find((p) => p.i === y);
+  if (!py || !request.other) return null;
+  return pairOk(request.kind, a, boxOf(request.other, py))
+    ? null
+    : { rule: 'request', items: [x, y] };
 };
 
 export const evaluate = (

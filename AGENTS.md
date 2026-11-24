@@ -35,7 +35,8 @@ Daily grocery-bagging logic puzzle on Devvit Web, built for the Reddit Game of t
 - Fragile: no other item anywhere above it in the same columns.
 - Temperature: cold and hot items cannot touch orthogonally.
 - Upright: the item cannot be rotated.
-- Difficulty by solution count: hard up to 250, medium up to 4 000, easy above.
+- Special request (`src/shared/requests.ts`): one per receipt, on items listed once. Kinds: top, offFloor, middle, apart, together, above. Checked by the validator (rule `request`) and pruned by the solver. A request must remove solutions; community receipts must have one, plus an optional 60-character note.
+- Difficulty by solution count, request included: hard up to 250, medium up to 4 000, easy above.
 
 ## Customer of the Day
 
@@ -43,7 +44,8 @@ Players who solved can vote for one pending community receipt per day (vote can 
 
 ## Status and next steps
 
-- Done: game, rules engine, solver, 101 verified house receipts, Customer of the Day loop, splash card, local playground, README. Local flow tested end to end (solve, conflicts, vote, write a receipt, share, election).
+- Done: game, rules engine, solver, 101 verified house receipts, Customer of the Day loop, special requests (game, editor, candidates, post text), splash card, local playground, README. Local flow tested end to end (solve, conflicts, vote, write a receipt with a request, share, election).
+- Winning plan, still to do: funny conflict animations (crack, melt, squash), recalibrate easy days and curate holiday puzzles for Dec 9 to 16, a 3-hint first-puzzle tutorial, a community reveal ("only X% packed like you"), then the Reddit playtest, demo video and Devpost text.
 - Name: the game was first called "Bagged!" and is now "Pakia Pakia!" (Swahili for "pack, pack!"). The local folder may still be named `Bagged`.
 - Next: playtest on Reddit (`npm run login`, then `npm run dev` on the test subreddit, then the moderator menu "Pakia Pakia!: post today's bag"), check the splash card and the game in the real Reddit apps (desktop, iOS, Android), fix what shows up, then `npm run deploy`.
 - Before the deadline: public GitHub repo `PakiaPakia`, a demo video, and the Devpost submission.

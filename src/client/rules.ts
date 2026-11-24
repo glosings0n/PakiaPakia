@@ -1,4 +1,5 @@
 import { ITEMS } from '../shared/items';
+import { describeRequest } from '../shared/requests';
 import type { Conflict, Puzzle, RuleId, Tag } from '../shared/types';
 
 export type RuleInfo = {
@@ -55,5 +56,9 @@ export const conflictMessage = (puzzle: Puzzle, conflict: Conflict): string => {
       return `Melting! ${nameOf(puzzle, a)} right next to the ${lower(puzzle, b)}.`;
     case 'upright':
       return `Keep the ${lower(puzzle, a)} standing up.`;
+    case 'request':
+      return puzzle.request
+        ? `The customer asked: ${describeRequest(puzzle.request)}`
+        : 'The customer is not happy with this bag.';
   }
 };

@@ -1,5 +1,6 @@
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { ITEMS } from '../../shared/items';
+import { describeRequest } from '../../shared/requests';
 import type { Puzzle } from '../../shared/types';
 import { Icon, ItemArt, TagBadges } from './Art';
 
@@ -10,6 +11,8 @@ type Props = {
   rot: Record<number, boolean>;
   pulse: number | null;
   hidden: number | null;
+  /** The customer's special request is broken right now. */
+  requestBroken: boolean;
   onPointerDown: (event: ReactPointerEvent, i: number) => void;
 };
 
@@ -21,6 +24,7 @@ export const ItemTray = ({
   rot,
   pulse,
   hidden,
+  requestBroken,
   onPointerDown,
 }: Props) => (
   <section className="receipt" aria-label="Receipt">
@@ -30,6 +34,18 @@ export const ItemTray = ({
         {puzzle.author ? `by u/${puzzle.author}` : 'house receipt'}
       </span>
     </div>
+    {puzzle.request && (
+      <p className={`request-line${requestBroken ? ' broken' : ''}`}>
+        <Icon name="request" size={16} />
+        <span>
+          <span className="sr-only">Special request: </span>
+          {describeRequest(puzzle.request)}
+          {puzzle.note && (
+            <span className="request-note"> “{puzzle.note}”</span>
+          )}
+        </span>
+      </p>
+    )}
     <div className="tray">
       {puzzle.items.map((id, i) => {
         const isPlaced = placed.has(i) || hidden === i;

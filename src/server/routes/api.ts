@@ -338,7 +338,12 @@ api.post('/receipts', async (c) => {
       ok: false,
       reason: 'Pack a bag before writing one',
     });
-  const check = checkReceipt({ title: body.title, items: body.items });
+  const check = checkReceipt({
+    title: body.title,
+    items: body.items,
+    request: body.request,
+    note: body.note,
+  });
   if (!check.ok)
     return c.json<ReceiptResponse>({ ok: false, reason: check.reason });
   const today = dayKey();
@@ -354,6 +359,8 @@ api.post('/receipts', async (c) => {
     authorId: userId,
     items: check.items,
     difficulty: check.difficulty,
+    request: check.request,
+    note: check.note,
   });
   return c.json<ReceiptResponse>({ ok: true, difficulty: check.difficulty });
 });

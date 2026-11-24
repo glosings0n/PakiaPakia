@@ -1,4 +1,12 @@
 import { footprint, hasTag, itemCells } from './items';
+import {
+  type Box,
+  pairOk,
+  REQUEST_INFO,
+  requestIndices,
+  type SpecialRequest,
+  unaryOk,
+} from './requests';
 import type { Difficulty, ItemId, Placement } from './types';
 import { GRID_COLS, GRID_ROWS } from './types';
 
@@ -17,6 +25,7 @@ type Candidate = {
   above: number;
   /** Orthogonal neighbour cells (not including itself). */
   neighbours: number;
+  box: Box;
 };
 
 const bit = (r: number, c: number): number => 1 << (r * GRID_COLS + c);
@@ -54,7 +63,8 @@ export const candidatesFor = (id: ItemId): Candidate[] => {
           }
         }
         neighbours &= ~mask;
-        list.push({ r, c, rot, mask, above, neighbours });
+        const box = { top: r, bottom: r + h - 1, left: c, right: c + w - 1 };
+        list.push({ r, c, rot, mask, above, neighbours, box });
       }
     }
   }
@@ -73,7 +83,11 @@ export type SolveResult = {
 
 export const solve = (
   items: readonly ItemId[],
-  options: { limit?: number; nodeLimit?: number } = {}
+  options: {
+    limit?: number;
+    nodeLimit?: number;
+    request?: SpecialRequest | null;
+  } = {}
 ): SolveResult => {
   const limit = options.limit ?? 1;
   const nodeLimit = options.nodeLimit ?? 5_000_000;
@@ -92,6 +106,19 @@ export const solve = (
     .sort((a, b) => a.n - b.n || b.size - a.size || a.id.localeCompare(b.id));
 
   const chosen: number[] = new Array<number>(order.length).fill(-1);
+
+  // Special request: which instances it names, and where they sit in the search order.
+  const request = options.request ?? null;
+  const pair = request ? REQUEST_INFO[request.kind].pair : false;
+  const named = request ? requestIndices(items, request) : { x: -1, y: -1 };
+  const depthX = order.findIndex((o) => o.i === named.x);
+  const depthY = order.findIndex((o) => o.i === named.y);
+  if (request && (depthX < 0 || (pair && depthY < 0)))
+    return { count: 0, capped: false, first: null, nodes: 0 };
+  const boxAt = (depth: number): Box | undefined => {
+    const o = order[depth];
+    return o ? candidatesFor(o.id)[chosen[depth] ?? -1]?.box : undefined;
+  };
   let count = 0;
   let nodes = 0;
   let capped = false;
@@ -143,6 +170,21 @@ export const solve = (
       if (fragile && cand.above & occupied) continue;
       if (hot && cand.neighbours & coldCells) continue;
       if (cold && cand.neighbours & hotCells) continue;
+      if (request) {
+        if (!pair && depth === depthX && !unaryOk(request.kind, cand.box))
+          continue;
+        if (pair && (depth === depthX || depth === depthY)) {
+          const otherDepth = depth === depthX ? depthY : depthX;
+          if (otherDepth < depth) {
+            const otherBox = boxAt(otherDepth);
+            if (otherBox) {
+              const a = depth === depthX ? cand.box : otherBox;
+              const b = depth === depthX ? otherBox : cand.box;
+              if (!pairOk(request.kind, a, b)) continue;
+            }
+          }
+        }
+      }
       chosen[depth] = k;
       recurse(
         depth + 1,
@@ -178,8 +220,15 @@ export type Rating = {
   difficulty: Difficulty;
 };
 
-export const rate = (items: readonly ItemId[]): Rating => {
-  const result = solve(items, { limit: RATING_CAP, nodeLimit: 3_000_000 });
+export const rate = (
+  items: readonly ItemId[],
+  request: SpecialRequest | null = null
+): Rating => {
+  const result = solve(items, {
+    limit: RATING_CAP,
+    nodeLimit: 3_000_000,
+    request,
+  });
   const band = DIFFICULTY_BANDS.find((b) => result.count <= b.maxSolutions);
   return {
     solvable: result.count > 0,

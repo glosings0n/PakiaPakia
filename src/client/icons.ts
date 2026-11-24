@@ -15,6 +15,7 @@ import {
   ReceiptIcon,
   RotateClockwiseIcon,
   SnowIcon,
+  StickyNote01Icon,
   Tick02Icon,
   Touch05Icon,
   UndoIcon,
@@ -48,6 +49,7 @@ export const ICONS = {
   comment: Comment01Icon,
   tap: Touch05Icon,
   streak: FireIcon,
+  request: StickyNote01Icon,
 } as const satisfies Record<string, unknown>;
 
 export type IconName = keyof typeof ICONS;

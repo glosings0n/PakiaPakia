@@ -1,3 +1,4 @@
+import type { SpecialRequest } from './requests';
 import type { Difficulty, ItemId, Placement, Puzzle } from './types';
 
 export type UserSummary = {
@@ -34,6 +35,8 @@ export type ReceiptCandidate = {
   author: string;
   items: ItemId[];
   difficulty: Difficulty;
+  request: SpecialRequest | null;
+  note: string | null;
   votes: number;
 };
 
@@ -80,7 +83,12 @@ export type VoteResponse = {
   candidates: ReceiptCandidate[];
   votedFor: string | null;
 };
-export type ReceiptRequest = { title: string; items: ItemId[] };
+export type ReceiptRequest = {
+  title: string;
+  items: ItemId[];
+  request: SpecialRequest | null;
+  note: string;
+};
 export type ReceiptResponse =
   { ok: true; difficulty: Difficulty } | { ok: false; reason: string };
 
