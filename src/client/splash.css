@@ -1,0 +1,293 @@
+/* ---------- Fonts (bundled, no network) ----------
+ * Fredoka for the interface, Patrick Hand for handwritten notes,
+ * JetBrains Mono for digits (via unicode-range) and the receipt paper. */
+@font-face {
+  font-family: 'Fredoka';
+  src: url('./fonts/fredoka-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fredoka';
+  src: url('./fonts/fredoka-latin-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fredoka';
+  src: url('./fonts/fredoka-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Fredoka';
+  src: url('./fonts/fredoka-latin-700-normal.woff2') format('woff2');
+  font-weight: 700 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Patrick Hand';
+  src: url('./fonts/patrick-hand-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+  font-weight: 400 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+  font-weight: 600 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Digits';
+  src: url('./fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+  font-weight: 400 500;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Digits';
+  src: url('./fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+  font-weight: 600 900;
+  unicode-range: U+0030-0039;
+  font-display: swap;
+}
+
+:root {
+  --bg: #ead9bf;
+  --fg: #2b2622;
+  --soft: #6b5d50;
+  --ink: #2b2622;
+  --paper: #fbf6ea;
+  --bag: #c49a69;
+  --bag-dark: #9c7547;
+  --accent: #d9452b;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1f1a16;
+    --fg: #f3e9d8;
+    --soft: #b9a991;
+    --bag: #8c6a43;
+    --bag-dark: #6b4f30;
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Digits', 'Fredoka', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+.card {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(110px, 38%) 1fr;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.bag-art {
+  position: relative;
+  height: min(86%, 240px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+
+.paper-bag {
+  position: relative;
+  height: 68%;
+  background: var(--bag);
+  border: 3px solid var(--ink);
+  border-radius: 4px 4px 14px 14px;
+  box-shadow:
+    inset 0 -8px 0 var(--bag-dark),
+    0 6px 0 rgba(0, 0, 0, 0.18);
+  display: grid;
+  place-items: center;
+  z-index: 2;
+}
+
+.paper-bag::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  top: -3px;
+  height: 12px;
+  background: var(--bag-dark);
+  border: 3px solid var(--ink);
+  border-radius: 4px 4px 0 0;
+}
+
+.paper-bag span {
+  font-family: 'Patrick Hand', cursive;
+  font-weight: 400;
+  font-size: clamp(14px, 4vw, 22px);
+  color: var(--accent);
+  border: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 0 8px;
+  transform: rotate(-10deg);
+  background: rgba(251, 246, 234, 0.8);
+}
+
+.peek {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: 56%;
+  height: 48%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2%;
+  z-index: 1;
+}
+
+.peek-item {
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: bob 2.6s ease-in-out infinite;
+}
+
+.peek-item:nth-child(2) {
+  animation-delay: 0.4s;
+}
+.peek-item:nth-child(3) {
+  animation-delay: 0.8s;
+}
+
+.peek-item svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.brand {
+  font-weight: 900;
+  font-style: italic;
+  font-size: clamp(26px, 7vw, 38px);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.brand em {
+  color: var(--accent);
+}
+
+.date {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--soft);
+}
+
+.slip {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 7px 10px 9px;
+  font-family: 'JetBrains Mono', monospace;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.slip-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #7a6c5d;
+}
+
+.slip-title {
+  font-weight: 900;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slip-meta {
+  font-size: 11px;
+  color: #7a6c5d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cta {
+  height: 46px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  font-size: 17px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 var(--ink);
+  transition: transform 0.08s;
+}
+
+.cta:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+.cta.done {
+  background: #3e8e5a;
+  font-size: 14px;
+}
+
+.stats {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--soft);
+  min-height: 15px;
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peek-item {
+    animation: none;
+  }
+}
