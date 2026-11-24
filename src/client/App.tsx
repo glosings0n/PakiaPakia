@@ -35,7 +35,12 @@ import { flag, setFlag } from './utils/storage';
 
 type Phase = 'playing' | 'stamping' | 'done';
 type Sheet = 'result' | 'editor' | 'help' | null;
-type Flash = { text: string; tone: 'info' | 'warn' | 'good' };
+type Flash = {
+  text: string;
+  tone: 'info' | 'warn' | 'good';
+  /** First-puzzle tutorial: which tip this is, and where the player should look. */
+  tip?: { step: 1 | 2 | 3; arrow: 'up' | 'down' };
+};
 type Drag = {
   i: number;
   from: 'tray' | 'bag';
@@ -49,7 +54,9 @@ type Drag = {
 };
 type Target = { inside: boolean; placement: Placement; ok: boolean };
 
-const ONBOARDED_KEY = 'pakia:onboarded';
+const TUTORIAL_KEY = 'pakia:tutorial-done';
+/** The tutorial ends on its own once the player has packed this many items. */
+const TUTORIAL_PLACEMENTS = 4;
 const clamp = (v: number, lo: number, hi: number) =>
   Math.max(lo, Math.min(hi, v));
 
@@ -129,7 +136,8 @@ const Game = ({
   const [tileH, setTileH] = useState(64);
   const [now, setNow] = useState(() => Date.now());
   const [muted, setMutedState] = useState(isMuted);
-  const [onboarded, setOnboarded] = useState(() => flag(ONBOARDED_KEY));
+  const [tutorialDone, setTutorialDone] = useState(() => flag(TUTORIAL_KEY));
+  const sawConflict = useRef(false);
   const [introRules, setIntroRules] = useState(false);
   const [shareState, setShareState] = useState<'idle' | 'busy' | 'done'>(
     'idle'
@@ -264,20 +272,32 @@ const Game = ({
   }, [phase]);
 
   /* ----- Board actions ----- */
+  /** Tutorial tip 3: the first drop makes the rules and the request pop once. */
   const markOnboarded = useCallback(() => {
-    if (onboarded) return;
-    setOnboarded(true);
-    setFlag(ONBOARDED_KEY);
+    if (tutorialDone || state.placements.length > 0) return;
     setIntroRules(true);
-    say(
-      puzzle.request
-        ? 'Nice! Mind the house rules above and the request below.'
-        : 'Nice! Now mind the four house rules above.',
-      'good',
-      3200
-    );
     window.setTimeout(() => setIntroRules(false), 1200);
-  }, [onboarded, say, puzzle.request]);
+  }, [tutorialDone, state.placements.length]);
+
+  /* ----- First-puzzle tutorial: ends once the player clearly has it ----- */
+  useEffect(() => {
+    if (tutorialDone) return;
+    const done =
+      phase !== 'playing' ||
+      (sawConflict.current && evaluation.conflicts.length === 0) ||
+      (evaluation.conflicts.length === 0 &&
+        state.placements.length >= TUTORIAL_PLACEMENTS);
+    if (evaluation.conflicts.length > 0) sawConflict.current = true;
+    if (done) {
+      setTutorialDone(true);
+      setFlag(TUTORIAL_KEY);
+    }
+  }, [
+    tutorialDone,
+    phase,
+    evaluation.conflicts.length,
+    state.placements.length,
+  ]);
 
   const place = useCallback(
     (p: Placement) => {
@@ -593,7 +613,32 @@ const Game = ({
         tone: 'good',
       };
     const first = evaluation.conflicts[0];
-    if (first) return { text: conflictMessage(puzzle, first), tone: 'warn' };
+    if (first)
+      return {
+        text: `${conflictMessage(puzzle, first)}${tutorialDone ? '' : ' Tap it to move it.'}`,
+        tone: 'warn',
+      };
+    if (!tutorialDone) {
+      if (state.placements.length > 0)
+        return {
+          text: puzzle.request
+            ? 'Mind the 4 rules up top and the request below.'
+            : 'Mind the 4 rules up top. Red means broken.',
+          tone: 'info',
+          tip: { step: 3, arrow: 'up' },
+        };
+      if (state.selected !== null)
+        return {
+          text: 'Tap the bag to drop it. Tap it again to turn it.',
+          tone: 'info',
+          tip: { step: 2, arrow: 'up' },
+        };
+      return {
+        text: 'Tap a grocery on the receipt to pick it up.',
+        tone: 'info',
+        tip: { step: 1, arrow: 'down' },
+      };
+    }
     if (state.selected !== null) {
       const id = puzzle.items[state.selected];
       if (id) {
@@ -614,7 +659,7 @@ const Game = ({
 
   const firstUnplaced = puzzle.items.findIndex((_, i) => !placedSet.has(i));
   const pulse =
-    !onboarded && state.selected === null && state.placements.length === 0
+    !tutorialDone && state.selected === null && state.placements.length === 0
       ? firstUnplaced
       : null;
   const selectedId =
@@ -708,11 +753,22 @@ const Game = ({
       </div>
 
       <p
-        className={`status m-0 ${status.tone}`}
+        className={`status m-0 ${status.tone}${status.tip ? ' tip' : ''}`}
         role="status"
         aria-live="polite"
       >
-        {status.text}
+        {status.tip && (
+          <span className="tip-step" aria-label={`Tip ${status.tip.step} of 3`}>
+            {status.tip.step}/3
+          </span>
+        )}
+        <span>{status.text}</span>
+        {status.tip && (
+          <Icon
+            name={status.tip.arrow === 'up' ? 'arrowUp' : 'arrowDown'}
+            size={16}
+          />
+        )}
       </p>
 
       <ItemTray
@@ -722,6 +778,7 @@ const Game = ({
         rot={state.rot}
         pulse={pulse}
         requestBroken={brokenRules.has('request')}
+        introRequest={introRules}
         tipped={tipped}
         hidden={ghost && ghost.from === 'bag' ? ghost.i : null}
         onPointerDown={beginDrag}

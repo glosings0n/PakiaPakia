@@ -4,6 +4,7 @@
  * the vanilla splash card share the exact same icons.
  */
 import {
+  ArrowDown01Icon,
   ArrowUp01Icon,
   Cancel01Icon,
   ChartBarLineIcon,
@@ -50,6 +51,8 @@ export const ICONS = {
   tap: Touch05Icon,
   streak: FireIcon,
   request: StickyNote01Icon,
+  arrowUp: ArrowUp01Icon,
+  arrowDown: ArrowDown01Icon,
 } as const satisfies Record<string, unknown>;
 
 export type IconName = keyof typeof ICONS;

@@ -13,6 +13,8 @@ type Props = {
   hidden: number | null;
   /** The customer's special request is broken right now. */
   requestBroken: boolean;
+  /** Tutorial: the request pops once, together with the rule chips. */
+  introRequest: boolean;
   /** Upright item the player just tried to turn: it tips and rocks back. */
   tipped: number | null;
   onPointerDown: (event: ReactPointerEvent, i: number) => void;
@@ -27,6 +29,7 @@ export const ItemTray = ({
   pulse,
   hidden,
   requestBroken,
+  introRequest,
   tipped,
   onPointerDown,
 }: Props) => (
@@ -38,7 +41,9 @@ export const ItemTray = ({
       </span>
     </div>
     {puzzle.request && (
-      <p className={`request-line${requestBroken ? ' broken' : ''}`}>
+      <p
+        className={`request-line${requestBroken ? ' broken' : introRequest ? ' intro' : ''}`}
+      >
         <Icon name="request" size={16} />
         <span>
           <span className="sr-only">Special request: </span>

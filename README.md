@@ -15,6 +15,8 @@ Every day a new receipt drops. Pack every item into a 5 by 5 paper bag without b
 - Tap an item already in the bag to pick it back up, or drag it out of the bag. Undo and Empty bag are always there.
 - The bag is solved when every item is packed and no rule is broken.
 
+On the first puzzle, the status line under the bag becomes a 3-step handwritten tutorial: pick up a grocery, drop it in the bag, then mind the rules and the request (the rule chips and the request pop once). If a rule breaks, the message adds how to fix it. The tutorial ends by itself once a broken rule has been fixed or 4 items are packed, and never comes back.
+
 ### House rules
 
 | Rule | Icon | Meaning |

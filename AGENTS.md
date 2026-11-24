@@ -47,7 +47,8 @@ Players who solved can vote for one pending community receipt per day (vote can 
 
 - Done: game, rules engine, solver, 101 verified house receipts, Customer of the Day loop, special requests (game, editor, candidates, post text), splash card, local playground, README. Local flow tested end to end (solve, conflicts, vote, write a receipt with a request, share, election).
 - Also done: conflict animations (sag, squash and crack, melt, tip), difficulty recalibration with holiday puzzles for the judging window.
-- Winning plan, still to do: a 3-hint first-puzzle tutorial, a community reveal ("only X% packed like you"), then the Reddit playtest, demo video and Devpost text.
+- Also done: 3-step first-puzzle tutorial in the status line (`TUTORIAL_KEY` in `App.tsx`, ends after a fixed conflict or 4 packed items).
+- Winning plan, still to do: a community reveal ("only X% packed like you"), then the Reddit playtest, demo video and Devpost text.
 - Name: the game was first called "Bagged!" and is now "Pakia Pakia!" (Swahili for "pack, pack!"). The local folder may still be named `Bagged`.
 - Next: playtest on Reddit (`npm run login`, then `npm run dev` on the test subreddit, then the moderator menu "Pakia Pakia!: post today's bag"), check the splash card and the game in the real Reddit apps (desktop, iOS, Android), fix what shows up, then `npm run deploy`.
 - Before the deadline: public GitHub repo `PakiaPakia`, a demo video, and the Devpost submission.
