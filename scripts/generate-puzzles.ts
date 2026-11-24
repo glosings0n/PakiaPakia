@@ -1,11 +1,15 @@
 /**
  * Generates the house receipt pool in src/shared/puzzles.ts.
  *
- * Every receipt is proven solvable by the exhaustive solver and rated by its
- * number of valid bags. Difficulty follows a weekly curve:
- * Mon/Tue easy, Wed/Thu/Sun medium, Fri/Sat hard.
+ * Every receipt is proven solvable by the exhaustive solver, then rated by
+ * how often a careless player still packs it (src/shared/difficulty.ts).
+ * Difficulty follows a weekly curve: Mon/Tue easy, Wed/Thu/Sun medium,
+ * Fri/Sat hard. Easy days still need one or two good decisions; hard days
+ * stay fair (never a near-zero win rate).
  * Each receipt also carries a special request that really changes the puzzle:
- * it must remove some of the valid bags without making the bag impossible.
+ * it must remove some of the valid bags without making the bag impossible,
+ * and consecutive days avoid repeating the same kind of request.
+ * The judging window (Dec 9 to 16, 2026) gets hand-picked holiday themes.
  *
  * Run with: npm run generate:puzzles
  */
@@ -18,7 +22,8 @@ import {
   requestProblem,
   type SpecialRequest,
 } from '../src/shared/requests';
-import { RATING_CAP, rate } from '../src/shared/solver';
+import { rate } from '../src/shared/difficulty';
+import { countSolutions, RATING_CAP } from '../src/shared/solver';
 import type { Difficulty, ItemId } from '../src/shared/types';
 
 const FIRST_DAY = '2026-11-20';
@@ -55,10 +60,23 @@ const THEMES: { title: string; pool: ItemId[] }[] = [
   { title: 'Taco Tuesday', pool: ['chicken', 'tomatoes', 'cheese', 'chips', 'rice', 'water', 'peas', 'icecream'] },
 ];
 
-const TARGETS: Record<Difficulty, { minCells: number; maxCells: number; minItems: number; maxItems: number; minSolutions: number; maxSolutions: number }> = {
-  easy: { minCells: 19, maxCells: 22, minItems: 8, maxItems: 9, minSolutions: 4001, maxSolutions: Number.POSITIVE_INFINITY },
-  medium: { minCells: 21, maxCells: 24, minItems: 9, maxItems: 10, minSolutions: 251, maxSolutions: 4000 },
-  hard: { minCells: 23, maxCells: 25, minItems: 8, maxItems: 10, minSolutions: 2, maxSolutions: 250 },
+/** Hand-picked themes for the hackathon judging window. */
+const HOLIDAY_DAYS: Record<string, { title: string; pool: ItemId[] }> = {
+  '2026-12-09': { title: 'Office holiday party', pool: ['pizza', 'chips', 'wine', 'cake', 'cheese', 'water', 'coffee', 'baguette', 'icecream'] },
+  '2026-12-10': { title: 'Holiday baking', pool: ['eggs', 'milk', 'cake', 'pie', 'bread', 'baguette', 'apples', 'coffee'] },
+  '2026-12-11': { title: 'Secret Santa snacks', pool: ['chips', 'cheese', 'wine', 'cake', 'coffee', 'apples', 'icecream', 'pizza'] },
+  '2026-12-12': { title: 'Winter market haul', pool: ['cheese', 'baguette', 'wine', 'apples', 'pie', 'coffee', 'bread', 'fish', 'tomatoes'] },
+  '2026-12-13': { title: 'Snowed in', pool: ['soup', 'coffee', 'milk', 'rice', 'peas', 'bread', 'towels', 'cereal', 'water'] },
+  '2026-12-14': { title: 'Guests arrive tomorrow', pool: ['towels', 'detergent', 'wine', 'cheese', 'bread', 'apples', 'water', 'cake', 'coffee'] },
+  '2026-12-15': { title: 'Feast for the neighbors', pool: ['chicken', 'turkey', 'peas', 'tomatoes', 'rice', 'bread', 'pie', 'wine'] },
+  '2026-12-16': { title: 'Holiday dinner', pool: ['turkey', 'wine', 'pie', 'cake', 'peas', 'bread', 'tomatoes', 'cheese', 'coffee'] },
+};
+
+/** Naive win rate ranges, kept inside the rating bands with a safety margin. */
+const TARGETS: Record<Difficulty, { minCells: number; maxCells: number; minItems: number; maxItems: number; minWin: number; maxWin: number }> = {
+  easy: { minCells: 19, maxCells: 23, minItems: 8, maxItems: 9, minWin: 0.18, maxWin: 0.45 },
+  medium: { minCells: 21, maxCells: 24, minItems: 9, maxItems: 10, minWin: 0.05, maxWin: 0.13 },
+  hard: { minCells: 22, maxCells: 25, minItems: 8, maxItems: 10, minWin: 0.01, maxWin: 0.035 },
 };
 
 const difficultyFor = (day: string): Difficulty => {
@@ -85,6 +103,7 @@ type Entry = {
   items: ItemId[];
   difficulty: Difficulty;
   solutions: number;
+  winRate: number;
   request: SpecialRequest;
 };
 
@@ -110,6 +129,7 @@ const requestOptions = (items: ItemId[], rng: () => number): SpecialRequest[] =>
 
 const entries: Entry[] = [];
 const recentTitles: string[] = [];
+const recentKinds: string[] = [];
 for (let day = FIRST_DAY, n = 0; day <= LAST_DAY; day = addDays(day, 1), n++) {
   const difficulty = difficultyFor(day);
   const target = TARGETS[difficulty];
@@ -117,7 +137,7 @@ for (let day = FIRST_DAY, n = 0; day <= LAST_DAY; day = addDays(day, 1), n++) {
   let found: Entry | null = null;
   for (let attempt = 0; attempt < 20000 && !found; attempt++) {
     const fresh = THEMES.filter((t) => !recentTitles.includes(t.title));
-    const theme = fresh[Math.floor(rng() * fresh.length)];
+    const theme = HOLIDAY_DAYS[day] ?? fresh[Math.floor(rng() * fresh.length)];
     if (!theme) break;
     const count = target.minItems + Math.floor(rng() * (target.maxItems - target.minItems + 1));
     const items: ItemId[] = [];
@@ -130,25 +150,35 @@ for (let day = FIRST_DAY, n = 0; day <= LAST_DAY; day = addDays(day, 1), n++) {
     const cells = items.reduce((sum, id) => sum + itemCells(id), 0);
     if (cells < target.minCells || cells > target.maxCells) continue;
     items.sort((a, b) => itemCells(b) - itemCells(a) || a.localeCompare(b));
-    const base = rate(items);
-    if (!base.solvable) continue;
-    // The request must cut some bags (unless the count is past the cap) and land on the day's difficulty.
-    for (const request of requestOptions(items, rng).slice(0, 14)) {
+    const baseSolutions = countSolutions(items);
+    if (baseSolutions === 0) continue;
+    // Requests of a kind not used in the last two days come first.
+    const options = requestOptions(items, rng);
+    const ordered = [
+      ...options.filter((r) => !recentKinds.includes(r.kind)),
+      ...options.filter((r) => recentKinds.includes(r.kind)),
+    ];
+    // The request must cut some bags (unless the count is past the cap) and land on the day's target.
+    for (const request of ordered.slice(0, 14)) {
+      const solutions = countSolutions(items, request);
+      if (solutions < 2) continue;
+      if (baseSolutions < RATING_CAP && solutions >= baseSolutions) continue;
       const rating = rate(items, request);
-      if (!rating.solvable || rating.difficulty !== difficulty) continue;
-      if (rating.solutions < target.minSolutions || rating.solutions > target.maxSolutions) continue;
-      if (base.solutions < RATING_CAP && rating.solutions >= base.solutions) continue;
-      found = { day, title: theme.title, items, difficulty, solutions: rating.solutions, request };
+      if (rating.difficulty !== difficulty) continue;
+      if (rating.winRate < target.minWin || rating.winRate > target.maxWin) continue;
+      found = { day, title: theme.title, items, difficulty, solutions, winRate: rating.winRate, request };
       break;
     }
     if (!found) continue;
     recentTitles.push(theme.title);
     if (recentTitles.length > 14) recentTitles.shift();
+    recentKinds.push(found.request.kind);
+    if (recentKinds.length > 2) recentKinds.shift();
   }
   if (!found) throw new Error(`Could not generate a ${difficulty} receipt for ${day}`);
   entries.push(found);
   console.log(
-    `${day} ${difficulty.padEnd(6)} ${String(found.solutions).padStart(5)} ${found.title} | ${found.request.kind} ${found.request.item}${found.request.other ? ` ${found.request.other}` : ''}`
+    `${day} ${difficulty.padEnd(6)} ${String(found.solutions).padStart(5)} win ${(found.winRate * 100).toFixed(0).padStart(2)}% ${found.title} | ${found.request.kind} ${found.request.item}${found.request.other ? ` ${found.request.other}` : ''}`
   );
 }
 
@@ -163,7 +193,7 @@ const body = entries
 
 const file = `// Generated by scripts/generate-puzzles.ts. Do not edit by hand.
 // Every receipt below was proven solvable by src/shared/solver.ts and is re-checked by
-// src/shared/puzzles.test.ts. Difficulty: Mon/Tue easy, Wed/Thu/Sun medium, Fri/Sat hard.
+// tests/shared.test.ts. Difficulty: Mon/Tue easy, Wed/Thu/Sun medium, Fri/Sat hard.
 import { dayNumber } from './dates';
 import type { SpecialRequest } from './requests';
 import type { Difficulty, ItemId, Puzzle } from './types';

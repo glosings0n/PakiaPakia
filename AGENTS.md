@@ -36,7 +36,8 @@ Daily grocery-bagging logic puzzle on Devvit Web, built for the Reddit Game of t
 - Temperature: cold and hot items cannot touch orthogonally.
 - Upright: the item cannot be rotated.
 - Special request (`src/shared/requests.ts`): one per receipt, on items listed once. Kinds: top, offFloor, middle, apart, together, above. Checked by the validator (rule `request`) and pruned by the solver. A request must remove solutions; community receipts must have one, plus an optional 60-character note.
-- Difficulty by solution count, request included: hard up to 250, medium up to 4 000, easy above.
+- Difficulty (`src/shared/difficulty.ts`): naive win rate of a simulated careless player (biggest first, random legal spot, no undo, 1 000 seeded games), request included. Hard under 4%, medium under 15%, easy above; community receipts above 60% are refused. The solver's bag count only proves solvability and checks that a request matters.
+- House receipts target easy 18 to 45%, medium 5 to 13%, hard 1 to 3,5%. Dec 9 to 16, 2026 (judging) use hand-picked holiday themes in `HOLIDAY_DAYS` of the generator.
 
 ## Customer of the Day
 
@@ -45,7 +46,8 @@ Players who solved can vote for one pending community receipt per day (vote can 
 ## Status and next steps
 
 - Done: game, rules engine, solver, 101 verified house receipts, Customer of the Day loop, special requests (game, editor, candidates, post text), splash card, local playground, README. Local flow tested end to end (solve, conflicts, vote, write a receipt with a request, share, election).
-- Winning plan, still to do: funny conflict animations (crack, melt, squash), recalibrate easy days and curate holiday puzzles for Dec 9 to 16, a 3-hint first-puzzle tutorial, a community reveal ("only X% packed like you"), then the Reddit playtest, demo video and Devpost text.
+- Also done: conflict animations (sag, squash and crack, melt, tip), difficulty recalibration with holiday puzzles for the judging window.
+- Winning plan, still to do: a 3-hint first-puzzle tutorial, a community reveal ("only X% packed like you"), then the Reddit playtest, demo video and Devpost text.
 - Name: the game was first called "Bagged!" and is now "Pakia Pakia!" (Swahili for "pack, pack!"). The local folder may still be named `Bagged`.
 - Next: playtest on Reddit (`npm run login`, then `npm run dev` on the test subreddit, then the moderator menu "Pakia Pakia!: post today's bag"), check the splash card and the game in the real Reddit apps (desktop, iOS, Android), fix what shows up, then `npm run deploy`.
 - Before the deadline: public GitHub repo `PakiaPakia`, a demo video, and the Devpost submission.

@@ -7,7 +7,7 @@ import {
   type SpecialRequest,
   unaryOk,
 } from './requests';
-import type { Difficulty, ItemId, Placement } from './types';
+import type { ItemId, Placement } from './types';
 import { GRID_COLS, GRID_ROWS } from './types';
 
 /**
@@ -202,37 +202,12 @@ export const solve = (
   return { count, capped, first, nodes };
 };
 
-/** Solution-count bands, calibrated with scripts/generate-puzzles.ts. */
-export const DIFFICULTY_BANDS: {
-  difficulty: Difficulty;
-  maxSolutions: number;
-}[] = [
-  { difficulty: 'hard', maxSolutions: 250 },
-  { difficulty: 'medium', maxSolutions: 4000 },
-  { difficulty: 'easy', maxSolutions: Number.POSITIVE_INFINITY },
-];
-
+/** Counting stops here: past this many valid bags, more makes no difference. */
 export const RATING_CAP = 4001;
 
-export type Rating = {
-  solvable: boolean;
-  solutions: number;
-  difficulty: Difficulty;
-};
-
-export const rate = (
+/** Number of distinct valid bags, up to RATING_CAP. */
+export const countSolutions = (
   items: readonly ItemId[],
   request: SpecialRequest | null = null
-): Rating => {
-  const result = solve(items, {
-    limit: RATING_CAP,
-    nodeLimit: 3_000_000,
-    request,
-  });
-  const band = DIFFICULTY_BANDS.find((b) => result.count <= b.maxSolutions);
-  return {
-    solvable: result.count > 0,
-    solutions: result.count,
-    difficulty: band?.difficulty ?? 'easy',
-  };
-};
+): number =>
+  solve(items, { limit: RATING_CAP, nodeLimit: 3_000_000, request }).count;

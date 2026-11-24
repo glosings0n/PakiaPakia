@@ -12,7 +12,8 @@ import {
   unaryOk,
   type SpecialRequest,
 } from '../src/shared/requests';
-import { RATING_CAP, rate, solve } from '../src/shared/solver';
+import { difficultyFor, MAX_WIN_RATE, naiveWinRate, rate } from '../src/shared/difficulty';
+import { countSolutions, RATING_CAP, solve } from '../src/shared/solver';
 import type { Placement, Puzzle } from '../src/shared/types';
 import { bagSignature, evaluate, findConflicts } from '../src/shared/validator';
 
@@ -46,12 +47,29 @@ describe('house receipts', () => {
       assert.equal(evaluation.solved, true);
       const rating = rate(receipt.items, request);
       assert.equal(rating.difficulty, receipt.difficulty);
-      const base = rate(receipt.items);
-      if (base.solutions < RATING_CAP)
-        assert.ok(rating.solutions < base.solutions, 'request changes nothing');
+      assert.ok(rating.winRate <= 0.45, 'bag packs itself');
+      if (receipt.difficulty === 'hard') assert.ok(rating.winRate >= 0.01, 'hard day is not fair');
+      const base = countSolutions(receipt.items);
+      if (base < RATING_CAP) assert.ok(rating.solutions < base, 'request changes nothing');
       assert.ok(receipt.items.length >= 8 && receipt.items.length <= 10);
     });
   }
+
+  it('gives the judging window (Dec 9 to 16) its holiday receipts', () => {
+    for (let day = '2026-12-09'; day <= '2026-12-16'; day = addDays(day, 1)) {
+      const receipt = HOUSE_RECEIPTS.find((r) => r.day === day);
+      assert.ok(receipt, `missing receipt for ${day}`);
+    }
+    const titles = HOUSE_RECEIPTS.filter((r) => r.day >= '2026-12-09' && r.day <= '2026-12-16').map((r) => r.title);
+    assert.equal(new Set(titles).size, titles.length, 'a holiday title repeats');
+  });
+
+  it('never uses the same request kind three days in a row', () => {
+    for (let k = 2; k < HOUSE_RECEIPTS.length; k++) {
+      const kinds = [k - 2, k - 1, k].map((n) => HOUSE_RECEIPTS[n]?.request.kind);
+      assert.ok(!(kinds[0] === kinds[1] && kinds[1] === kinds[2]), `same request kind around ${HOUSE_RECEIPTS[k]?.day}`);
+    }
+  });
 
   it('falls back to a pool receipt outside the generated range', () => {
     const p = houseReceiptFor('2030-06-01');
@@ -130,6 +148,30 @@ describe('validator rules', () => {
     ]);
     assert.equal(a, b);
     assert.equal(a.length, 25);
+  });
+});
+
+describe('difficulty', () => {
+  const sample = HOUSE_RECEIPTS[0];
+
+  it('maps the naive win rate to the three bands', () => {
+    assert.equal(difficultyFor(0), 'hard');
+    assert.equal(difficultyFor(0.039), 'hard');
+    assert.equal(difficultyFor(0.04), 'medium');
+    assert.equal(difficultyFor(0.149), 'medium');
+    assert.equal(difficultyFor(0.15), 'easy');
+  });
+
+  it('is stable and ignores the order of the receipt', () => {
+    assert.ok(sample);
+    const a = naiveWinRate(sample.items, sample.request);
+    const b = naiveWinRate([...sample.items].reverse(), sample.request);
+    assert.equal(a, b);
+    assert.equal(a, naiveWinRate(sample.items, sample.request));
+  });
+
+  it('rates an almost empty bag as one that packs itself', () => {
+    assert.ok(naiveWinRate(['apples', 'apples', 'cheese', 'bread'], null) > MAX_WIN_RATE);
   });
 });
 

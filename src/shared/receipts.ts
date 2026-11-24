@@ -1,6 +1,11 @@
 import { isItemId, itemCells } from './items';
-import { isSpecialRequest, requestProblem, type SpecialRequest } from './requests';
-import { RATING_CAP, rate } from './solver';
+import {
+  isSpecialRequest,
+  requestProblem,
+  type SpecialRequest,
+} from './requests';
+import { MAX_WIN_RATE, rate } from './difficulty';
+import { countSolutions, RATING_CAP } from './solver';
 import type { Difficulty, ItemId } from './types';
 import { GRID_CELLS } from './types';
 
@@ -146,8 +151,9 @@ export const checkReceipt = (draft: {
     return { ok: false, reason: 'That will never fit in one bag' };
   if (cells < RECEIPT_LIMITS.minCells)
     return { ok: false, reason: 'Too easy: fill more of the bag' };
-  const base = rate(items);
-  if (!base.solvable)
+  items.sort((a, b) => itemCells(b) - itemCells(a) || a.localeCompare(b));
+  const baseSolutions = countSolutions(items);
+  if (baseSolutions === 0)
     return { ok: false, reason: 'Impossible bag: no way to pack this' };
   if (!isSpecialRequest(draft.request))
     return { ok: false, reason: MISSING_REQUEST };
@@ -162,12 +168,16 @@ export const checkReceipt = (draft: {
   const rating = rate(items, request);
   if (!rating.solvable)
     return { ok: false, reason: 'Your request makes this bag impossible' };
-  if (base.solutions < RATING_CAP && rating.solutions >= base.solutions)
+  if (baseSolutions < RATING_CAP && rating.solutions >= baseSolutions)
     return {
       ok: false,
       reason: 'Your request changes nothing: every bag already does that',
     };
-  items.sort((a, b) => itemCells(b) - itemCells(a) || a.localeCompare(b));
+  if (rating.winRate > MAX_WIN_RATE)
+    return {
+      ok: false,
+      reason: 'Too easy: this bag packs itself. Add a tricky item',
+    };
   const note = normalizeTitle(rawNote);
   return {
     ok: true,
