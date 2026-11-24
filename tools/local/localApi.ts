@@ -8,6 +8,8 @@ import { Hono } from 'hono';
 import { dayKey, dayNumber, isDayKey } from '../../src/shared/dates';
 import { houseReceiptFor } from '../../src/shared/puzzles';
 import { checkReceipt } from '../../src/shared/receipts';
+import { solve } from '../../src/shared/solver';
+import { bagSignature, buildBag } from '../../src/shared/validator';
 import {
   REQUEST_INFO,
   REQUEST_KINDS,
@@ -15,7 +17,13 @@ import {
 } from '../../src/shared/requests';
 import type { ItemId } from '../../src/shared/types';
 import { getOrChooseDayPuzzle } from '../../src/server/core/daily';
-import { addReceipt, castVote, keys } from '../../src/server/redis';
+import {
+  addReceipt,
+  castVote,
+  getSolve,
+  keys,
+  recordSolve,
+} from '../../src/server/redis';
 import { api } from '../../src/server/routes/api';
 import { comments, context, redis, resetStore } from './mockServer';
 
@@ -126,6 +134,51 @@ app.post('/__dev/seed', async (c) => {
     created.push(sample.title);
   }
   return c.json({ status: 'ok', created });
+});
+
+/**
+ * Records 12 solves from fake players on the open day, so the community reveal has numbers.
+ * Some bags repeat on purpose: a few popular layouts and a long tail.
+ */
+app.post('/__dev/solves', async (c) => {
+  const day = c.req.query('day');
+  const target = day && isDayKey(day) ? day : dayKey();
+  const { puzzle } = await getOrChooseDayPuzzle(target);
+  const all: Parameters<typeof bagSignature>[1][] = [];
+  solve(puzzle.items, {
+    limit: 400,
+    request: puzzle.request ?? null,
+    onSolution: (placements) => all.push(placements),
+  });
+  if (all.length === 0) return c.json({ status: 'error', message: 'No bag' });
+  let seed = 7;
+  const random = () => {
+    seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+    return seed / 2_147_483_648;
+  };
+  let added = 0;
+  for (let n = 0; n < 12; n++) {
+    const userId = `t2_fake${n}`;
+    if (await getSolve(target, userId)) continue;
+    // Cubing skews the pick toward the first bags, so some layouts repeat.
+    const placements = all[Math.floor(random() ** 3 * all.length)] ?? all[0]!;
+    const bag = buildBag(puzzle, placements);
+    await recordSolve(
+      target,
+      userId,
+      {
+        timeMs: 40_000 + Math.round(random() * 120_000),
+        moves: placements.length + Math.round(random() * 8),
+        placements,
+        signature: bagSignature(puzzle, placements),
+        at: Date.now(),
+      },
+      puzzle,
+      bag?.flat() ?? []
+    );
+    added++;
+  }
+  return c.json({ status: 'ok', added, distinctBags: all.length });
 });
 
 /** Simulates the 00:00 UTC rollover for today: elects the most voted receipt. */

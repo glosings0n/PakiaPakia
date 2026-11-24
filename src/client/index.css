@@ -1058,6 +1058,60 @@ input:focus-visible {
   color: #7a6c5d;
 }
 
+/* Community reveal: how unusual your bag is. Pops once when the result arrives. */
+.reveal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: #fffdf7;
+  animation: reveal-in 0.4s ease-out 1;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reveal-art {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 5px;
+  border-radius: 10px;
+  background: var(--chip);
+  box-sizing: border-box;
+}
+
+.reveal-art svg {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.reveal-head {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.reveal-detail {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg-soft);
+}
+
 .tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

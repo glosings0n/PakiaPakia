@@ -27,6 +27,11 @@ export type CommunityBag = {
   /** How many solvers packed exactly the same bag as you (you included). */
   sameBagCount: number;
   totalBags: number;
+  /**
+   * Your least common choice: the item whose exact spot the fewest other solvers used.
+   * Null when you are the only solver.
+   */
+  rareSpot: { item: ItemId; others: number } | null;
 };
 
 export type ReceiptCandidate = {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { GameResult, LeaderRow, ReceiptCandidate } from '../../shared/api';
 import { formatDay, formatDuration, msUntilNextDay } from '../../shared/dates';
 import { describeRequest } from '../../shared/requests';
+import { revealFor } from '../../shared/reveal';
 import type { Puzzle } from '../../shared/types';
 import { DIFFICULTY_LABELS } from '../../shared/types';
 import { Icon, ItemArt } from './Art';
@@ -116,6 +117,26 @@ const CandidateCard = ({
   </div>
 );
 
+/** How unusual the player's bag is: the moment worth sharing. */
+const RevealLine = ({ result }: { result: GameResult }) => {
+  const reveal = revealFor(result.community);
+  if (!reveal) return null;
+  const rare = result.community.rareSpot;
+  return (
+    <div className="reveal" role="status">
+      {rare && (
+        <span className="reveal-art" aria-hidden="true">
+          <ItemArt id={rare.item} className="art" />
+        </span>
+      )}
+      <div className="min-w-0">
+        <p className="reveal-head">{reveal.headline}</p>
+        {reveal.detail && <p className="reveal-detail">{reveal.detail}</p>}
+      </div>
+    </div>
+  );
+};
+
 /** The single end screen: stats, the community loop, and tomorrow's customer. */
 export const ResultCard = (props: Props) => {
   const { result, guest, puzzle } = props;
@@ -185,6 +206,7 @@ export const ResultCard = (props: Props) => {
 
         {result && (
           <>
+            <RevealLine result={result} />
             <p className="toast-line">
               {result.totalSolves > 1
                 ? `Faster than ${result.beatPct}% of ${props.subreddit ? `r/${props.subreddit}` : 'baggers'} today`

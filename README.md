@@ -58,7 +58,8 @@ This is the community loop that makes Pakia Pakia! a Reddit game rather than a p
 Other community touches:
 
 - Streak flair (`N-day bagger`) from a 2-day streak.
-- "Share my time" posts a comment as the player, with time and moves.
+- Community reveal: right after solving, the result card says how unusual your bag is ("Only 17% packed it like you") and names your rarest choice ("Only 8% put the milk where you did"). Percentages count the other solvers of the day; the reveal stays hidden while you are the only one.
+- "Share my time" posts a comment as the player, with time, moves and the reveal line.
 - Hivemind: the most common item in each cell, across everyone who solved today.
 - Same bag: how many players packed exactly the same bag as you.
 - Top baggers: today's leaderboard, ranked by time, then moves.
@@ -111,6 +112,7 @@ Then open http://localhost:5173. The real client and the real API routes run aga
 - switch player (`local_bagger`, `alice`, `bob`, `carol`, `guest`) to test votes and leaderboards;
 - open any day, or the splash card;
 - seed 3 community receipts with votes, then run the midnight election;
+- add 12 solves from fake players on the open day, to see the community reveal;
 - forget local progress, or reset all server data.
 
 Server-side effects (comments, flair, posts) are printed in the terminal.

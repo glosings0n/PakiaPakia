@@ -87,6 +87,8 @@ export const solve = (
     limit?: number;
     nodeLimit?: number;
     request?: SpecialRequest | null;
+    /** Called with every bag found, up to `limit`. */
+    onSolution?: (placements: Placement[]) => void;
   } = {}
 ): SolveResult => {
   const limit = options.limit ?? 1;
@@ -134,8 +136,8 @@ export const solve = (
     if (capped) return;
     if (depth === order.length) {
       count++;
-      if (!first) {
-        first = order.map((o, k) => {
+      const snapshot = (): Placement[] =>
+        order.map((o, k) => {
           const cand = candidatesFor(o.id)[chosen[k] ?? 0];
           return {
             i: o.i,
@@ -144,7 +146,8 @@ export const solve = (
             rot: cand?.rot ?? false,
           };
         });
-      }
+      if (!first) first = snapshot();
+      options.onSolution?.(snapshot());
       if (count >= limit) capped = true;
       return;
     }

@@ -12,6 +12,7 @@ import type {
 import { GRID_CELLS } from '../shared/types';
 import { isDailyPostData, isPuzzle } from '../shared/guards';
 import type { SpecialRequest } from '../shared/requests';
+import { footprints } from '../shared/reveal';
 
 /** All Redis keys in one place. Day keys are YYYY-MM-DD (UTC). */
 export const keys = {
@@ -23,6 +24,7 @@ export const keys = {
   leaderboard: (day: string) => `lb:${day}`,
   signatures: (day: string) => `sig:${day}`,
   cells: (day: string) => `cells:${day}`,
+  spots: (day: string) => `spots:${day}`,
   user: (userId: string) => `user:${userId}`,
   shared: (day: string) => `shared:${day}`,
   receipt: (id: string) => `receipt:${id}`,
@@ -164,6 +166,8 @@ export const recordSolve = async (
     const id = instance === null ? undefined : puzzle.items[instance];
     if (id) increments.push(redis.hIncrBy(keys.cells(day), `${cell}:${id}`, 1));
   });
+  for (const spot of footprints(puzzle.items, bag))
+    increments.push(redis.hIncrBy(keys.spots(day), spot.field, 1));
   await Promise.all(increments);
   return true;
 };
@@ -264,16 +268,41 @@ export const getLeaderboard = async (
 
 /* ---------- Community bag ---------- */
 
+/** The player's least common choice: the item whose exact spot the fewest others used. */
+const rarestSpot = (
+  spots: Record<string, string>,
+  items: readonly ItemId[],
+  bag: readonly (number | null)[]
+): CommunityBag['rareSpot'] => {
+  let best: { item: ItemId; others: number; size: number } | null = null;
+  for (const spot of footprints(items, bag)) {
+    // The stored count includes this player once.
+    const others = Math.max(0, Number(spots[spot.field] ?? 1) - 1);
+    if (
+      !best ||
+      others < best.others ||
+      (others === best.others && spot.size > best.size)
+    )
+      best = { item: spot.item, others, size: spot.size };
+  }
+  return best ? { item: best.item, others: best.others } : null;
+};
+
 export const getCommunityBag = async (
   day: string,
   signature: string,
-  mine: (ItemId | null)[]
+  puzzle: Puzzle,
+  bag: readonly (number | null)[]
 ): Promise<CommunityBag> => {
-  const [counts, sameBag, totalBags] = await Promise.all([
+  const [counts, spots, sameBag, totalBags] = await Promise.all([
     redis.hGetAll(keys.cells(day)),
+    redis.hGetAll(keys.spots(day)),
     redis.zScore(keys.signatures(day), signature),
     redis.zCard(keys.leaderboard(day)),
   ]);
+  const mine = bag.map((instance) =>
+    instance === null ? null : (puzzle.items[instance] ?? null)
+  );
   const best: { id: ItemId | null; n: number }[] = Array.from(
     { length: GRID_CELLS },
     () => ({ id: null, n: 0 })
@@ -307,6 +336,7 @@ export const getCommunityBag = async (
     matchPct: filled ? Math.round((matches / filled) * 100) : 0,
     sameBagCount: sameBag ?? 1,
     totalBags,
+    rareSpot: totalBags > 1 ? rarestSpot(spots, puzzle.items, bag) : null,
   };
 };
 

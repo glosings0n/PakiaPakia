@@ -14,7 +14,8 @@ import type {
 } from '../../shared/api';
 import { dayKey, formatDuration } from '../../shared/dates';
 import { checkReceipt } from '../../shared/receipts';
-import type { DailyPostData, ItemId, Placement } from '../../shared/types';
+import type { DailyPostData, Placement } from '../../shared/types';
+import { revealFor } from '../../shared/reveal';
 import { bagSignature, buildBag, evaluate } from '../../shared/validator';
 import { postUrl, resolveCurrentPost } from '../core/daily';
 import {
@@ -63,18 +64,6 @@ const isPlacement = (v: unknown): v is Placement =>
   typeof v.c === 'number' &&
   typeof v.rot === 'boolean';
 
-const bagItems = (
-  data: DailyPostData,
-  placements: Placement[]
-): (ItemId | null)[] => {
-  const bag = buildBag(data.puzzle, placements);
-  return (bag ?? [])
-    .flat()
-    .map((instance) =>
-      instance === null ? null : (data.puzzle.items[instance] ?? null)
-    );
-};
-
 const buildResult = async (
   data: DailyPostData,
   userId: string,
@@ -99,7 +88,8 @@ const buildResult = async (
     getCommunityBag(
       data.day,
       solve.signature,
-      bagItems(data, solve.placements)
+      data.puzzle,
+      buildBag(data.puzzle, solve.placements)?.flat() ?? []
     ),
     getVote(today, userId),
     hasSubmitted(today, userId),
@@ -265,10 +255,22 @@ api.post('/share', async (c) => {
   if (!context.postId) return fail(c, 'No post to comment on');
   if (!(await markShared(data.day, userId)))
     return fail(c, 'Already shared', 409);
-  const user = await getUser(userId);
+  const [user, community] = await Promise.all([
+    getUser(userId),
+    getCommunityBag(
+      data.day,
+      solve.signature,
+      data.puzzle,
+      buildBag(data.puzzle, solve.placements)?.flat() ?? []
+    ),
+  ]);
   const streak = effectiveStreak(user, dayKey());
+  const reveal = revealFor(community);
   const lines = [
     `**Pakia Pakia! #${data.number}**: packed in **${formatDuration(solve.timeMs)}** with ${solve.moves} moves`,
+    reveal
+      ? [`${reveal.headline}.`, reveal.detail].filter(Boolean).join(' ')
+      : null,
     streak >= 2 ? `${streak}-day streak` : null,
   ].filter(Boolean);
   try {

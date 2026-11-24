@@ -15,7 +15,13 @@ import {
 import { difficultyFor, MAX_WIN_RATE, naiveWinRate, rate } from '../src/shared/difficulty';
 import { countSolutions, RATING_CAP, solve } from '../src/shared/solver';
 import type { Placement, Puzzle } from '../src/shared/types';
-import { bagSignature, evaluate, findConflicts } from '../src/shared/validator';
+import { footprints, revealFor } from '../src/shared/reveal';
+import {
+  bagSignature,
+  buildBag,
+  evaluate,
+  findConflicts,
+} from '../src/shared/validator';
 
 const puzzle = (items: Puzzle['items']): Puzzle => ({ title: 'Test', author: null, items, difficulty: 'easy' });
 
@@ -315,5 +321,83 @@ describe('dates', () => {
     assert.equal(dayNumber('2026-11-20'), 1);
     assert.equal(dayNumber('2026-12-09'), 20);
     assert.equal(formatDay('2026-12-09'), 'Wed, Dec 9');
+  });
+});
+
+describe('community reveal', () => {
+  const base = {
+    cells: [],
+    matchPct: 0,
+    sameBagCount: 1,
+    totalBags: 10,
+    rareSpot: null,
+  };
+
+  it('stays quiet while you are the only solver', () => {
+    assert.equal(revealFor({ ...base, totalBags: 1 }), null);
+  });
+
+  it('counts the other solvers only', () => {
+    assert.equal(revealFor(base)?.headline, 'Nobody packed it like you');
+    assert.equal(
+      revealFor({ ...base, sameBagCount: 2 })?.headline,
+      'Only 11% packed it like you'
+    );
+    assert.equal(
+      revealFor({ ...base, sameBagCount: 7 })?.headline,
+      '67% packed it just like you'
+    );
+    assert.equal(
+      revealFor({ ...base, sameBagCount: 10 })?.headline,
+      'Everyone packed it just like you'
+    );
+  });
+
+  it('never rounds a real count down to 0%', () => {
+    assert.equal(
+      revealFor({ ...base, totalBags: 1000, sameBagCount: 2 })?.headline,
+      'Only 1% packed it like you'
+    );
+  });
+
+  it('names your rarest spot', () => {
+    assert.equal(
+      revealFor({ ...base, rareSpot: { item: 'milk', others: 0 } })?.detail,
+      'Nobody else put the milk where you did.'
+    );
+    assert.equal(
+      revealFor({ ...base, rareSpot: { item: 'cake', others: 2 } })?.detail,
+      'Only 22% put the birthday cake where you did.'
+    );
+    assert.equal(
+      revealFor({ ...base, rareSpot: { item: 'cake', others: 6 } })?.detail,
+      'Every item sits where most baggers put it.'
+    );
+  });
+
+  it('gives each packed item its exact cells', () => {
+    const puzzle = HOUSE_RECEIPTS[0]!;
+    const first = solve(puzzle.items, { request: puzzle.request ?? null }).first;
+    assert.ok(first);
+    const bag = buildBag(puzzle, first)!.flat();
+    const spots = footprints(puzzle.items, bag);
+    assert.equal(spots.length, puzzle.items.length);
+    for (const spot of spots) {
+      assert.match(spot.field, /^[a-z]+@\d+(\.\d+)*$/);
+      assert.equal(spot.field.split('@')[1]!.split('.').length, spot.size);
+    }
+  });
+
+  it('lists every bag the solver finds when asked', () => {
+    const puzzle = HOUSE_RECEIPTS[0]!;
+    const seen: Placement[][] = [];
+    const result = solve(puzzle.items, {
+      limit: 20,
+      request: puzzle.request ?? null,
+      onSolution: (p) => seen.push(p),
+    });
+    assert.equal(seen.length, result.count);
+    const signatures = new Set(seen.map((p) => bagSignature(puzzle, p)));
+    assert.equal(signatures.size, seen.length);
   });
 });

@@ -118,6 +118,7 @@ const panel = () => {
       <button data-a="today">Back to today</button>
       <button data-a="splash">Open the feed card (splash)</button>
       <button data-a="seed">Seed 3 community receipts</button>
+      <button data-a="solves">Add 12 solves from other players</button>
       <button data-a="elect">Run the midnight election</button>
       <button data-a="progress">Forget my local progress</button>
       <button data-a="reset" class="danger">Reset all server data</button>
@@ -140,6 +141,13 @@ const panel = () => {
     if (action === 'seed')
       void post('/__dev/seed').then(() =>
         showToast('3 receipts are waiting for votes')
+      );
+    if (action === 'solves')
+      void post(`/__dev/solves${day ? `?day=${day}` : ''}`).then(
+        (r: { added?: number }) => {
+          showToast(`${r.added ?? 0} players packed this bag`);
+          window.setTimeout(() => location.reload(), 900);
+        }
       );
     if (action === 'elect')
       void post('/__dev/elect').then(
