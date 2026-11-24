@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReceiptResponse } from '../../shared/api';
 import { ITEM_IDS, ITEMS } from '../../shared/items';
 import {
@@ -38,6 +38,7 @@ export const ReceiptEditor = ({ onClose, onSubmitted }: Props) => {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const requestRef = useRef<HTMLElement>(null);
 
   const counts = useMemo(() => {
     const map = new Map<ItemId, number>();
@@ -155,7 +156,11 @@ export const ReceiptEditor = ({ onClose, onSubmitted }: Props) => {
         text: `Packable · ${DIFFICULTY_LABELS[check.difficulty]}`,
       };
     if (check.reason === MISSING_REQUEST)
-      return { tone: 'muted', text: 'Packable. Now add your special request' };
+      return {
+        tone: 'muted',
+        text: 'Packable. Now pick a special request',
+        toRequest: true,
+      };
     return { tone: 'warn', text: check.reason };
   })();
 
@@ -256,7 +261,8 @@ export const ReceiptEditor = ({ onClose, onSubmitted }: Props) => {
             </div>
 
             <section
-              className="flex flex-col gap-2"
+              ref={requestRef}
+              className="flex scroll-mt-3 flex-col gap-2"
               aria-label="Special request"
             >
               <h3 className="m-0 text-[15px] font-extrabold">
@@ -330,23 +336,45 @@ export const ReceiptEditor = ({ onClose, onSubmitted }: Props) => {
               />
             </section>
 
-            <p className={`status m-0 !h-auto ${verdict.tone}`}>
-              {verdict.text}
-            </p>
-
-            {error && <p className="status warn m-0 !h-auto">{error}</p>}
-            <button
-              type="button"
-              className="big-btn"
-              onClick={() => void submit()}
-              disabled={
-                sending ||
-                !check?.ok ||
-                title.trim().length < RECEIPT_LIMITS.minTitle
-              }
-            >
-              {sending ? 'Sending...' : 'Submit for tomorrow'}
-            </button>
+            {/* Always in view: what is missing, and the button to send. */}
+            <div className="sheet-footer">
+              {'toRequest' in verdict && verdict.toRequest ? (
+                <button
+                  type="button"
+                  className="status link-status m-0 !h-auto"
+                  onClick={() =>
+                    requestRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start',
+                    })
+                  }
+                >
+                  {verdict.text}
+                  <Icon name="arrowDown" size={16} />
+                </button>
+              ) : (
+                <p className={`status m-0 !h-auto ${verdict.tone}`}>
+                  {verdict.text}
+                </p>
+              )}
+              {error && <p className="status warn m-0 !h-auto">{error}</p>}
+              <button
+                type="button"
+                className="big-btn"
+                onClick={() => void submit()}
+                disabled={
+                  sending ||
+                  !check?.ok ||
+                  title.trim().length < RECEIPT_LIMITS.minTitle
+                }
+              >
+                {sending
+                  ? 'Sending...'
+                  : check?.ok && title.trim().length < RECEIPT_LIMITS.minTitle
+                    ? 'Name your receipt first'
+                    : 'Submit for tomorrow'}
+              </button>
+            </div>
           </>
         )}
       </div>

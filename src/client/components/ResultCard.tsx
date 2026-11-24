@@ -328,15 +328,20 @@ export const ResultCard = (props: Props) => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                className="big-btn"
+                className={`big-btn${result.shared || props.shareState === 'done' ? ' done' : ''}`}
                 onClick={props.onShare}
                 disabled={result.shared || props.shareState !== 'idle'}
               >
-                {result.shared || props.shareState === 'done'
-                  ? 'Shared'
-                  : props.shareState === 'busy'
-                    ? 'Posting...'
-                    : 'Share my time'}
+                {result.shared || props.shareState === 'done' ? (
+                  <>
+                    <Icon name="check" size={18} />
+                    In the comments
+                  </>
+                ) : props.shareState === 'busy' ? (
+                  'Posting...'
+                ) : (
+                  'Share my time'
+                )}
               </button>
               <button
                 type="button"
