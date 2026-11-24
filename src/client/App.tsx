@@ -141,7 +141,8 @@ const Game = ({
   const zoneRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<Drag | null>(null);
   const flashTimer = useRef<number | undefined>(undefined);
-  const prevConflictCount = useRef(0);
+  const prevConflicts = useRef(new Set<string>());
+  const [tipped, setTipped] = useState<number | null>(null);
 
   const placedSet = useMemo(
     () => new Set(state.placements.map((p) => p.i)),
@@ -205,13 +206,16 @@ const Game = ({
 
   /* ----- Conflict sound when a new rule breaks ----- */
   useEffect(() => {
-    if (
-      evaluation.conflicts.length > prevConflictCount.current &&
-      phase === 'playing'
-    )
-      sfx.conflict();
-    prevConflictCount.current = evaluation.conflicts.length;
-  }, [evaluation.conflicts.length, phase]);
+    const seen = prevConflicts.current;
+    const now = new Set(
+      evaluation.conflicts.map((c) => `${c.rule}:${c.items.join(',')}`)
+    );
+    const fresh = evaluation.conflicts.find(
+      (c) => !seen.has(`${c.rule}:${c.items.join(',')}`)
+    );
+    if (fresh && phase === 'playing') sfx.conflict(fresh.rule);
+    prevConflicts.current = now;
+  }, [evaluation.conflicts, phase]);
 
   /* ----- Win ----- */
   const submitSolve = useCallback(
@@ -320,9 +324,15 @@ const Game = ({
     const id = puzzle.items[i];
     if (!id) return;
     if (!canRotate(id)) {
-      sfx.invalid();
+      const upright = ITEMS[id].tags.includes('upright');
+      if (upright) {
+        // Show the rule: the item starts to tip over, then rocks back.
+        sfx.conflict('upright');
+        setTipped(i);
+        window.setTimeout(() => setTipped(null), 600);
+      } else sfx.invalid();
       say(
-        ITEMS[id].tags.includes('upright')
+        upright
           ? `${ITEMS[id].name} has to stay upright.`
           : 'Turning it changes nothing.',
         'warn'
@@ -712,6 +722,7 @@ const Game = ({
         rot={state.rot}
         pulse={pulse}
         requestBroken={brokenRules.has('request')}
+        tipped={tipped}
         hidden={ghost && ghost.from === 'bag' ? ghost.i : null}
         onPointerDown={beginDrag}
       />

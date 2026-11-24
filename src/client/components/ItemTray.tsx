@@ -13,6 +13,8 @@ type Props = {
   hidden: number | null;
   /** The customer's special request is broken right now. */
   requestBroken: boolean;
+  /** Upright item the player just tried to turn: it tips and rocks back. */
+  tipped: number | null;
   onPointerDown: (event: ReactPointerEvent, i: number) => void;
 };
 
@@ -25,6 +27,7 @@ export const ItemTray = ({
   pulse,
   hidden,
   requestBroken,
+  tipped,
   onPointerDown,
 }: Props) => (
   <section className="receipt" aria-label="Receipt">
@@ -53,6 +56,7 @@ export const ItemTray = ({
         if (isPlaced) classes.push('placed');
         if (selected === i) classes.push('selected');
         if (pulse === i) classes.push('pulse');
+        if (tipped === i) classes.push('tip');
         return (
           <button
             key={i}

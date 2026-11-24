@@ -57,10 +57,39 @@ export const getWebViewMode = () =>
   location.pathname.includes('splash') ? 'inline' : 'expanded';
 
 /* ---------- DEV panel ---------- */
+const PANEL_ID = 'pakia-dev';
+
+/** Explicit styles: the game's CSS reset strips buttons and selects bare. */
+const PANEL_CSS = `
+#${PANEL_ID} { position: fixed; left: 50%; top: 4px; transform: translateX(-50%); z-index: 9998;
+  background: #fffdf7; color: #2b2622; border: 2px solid #2b2622; border-radius: 10px;
+  padding: 3px 10px; font: 500 13px/1.3 Fredoka, sans-serif; width: max-content; max-width: 260px;
+  box-shadow: 0 2px 0 rgba(43, 38, 34, 0.3); }
+#${PANEL_ID}[open] { padding: 6px 10px 10px; }
+#${PANEL_ID} summary { cursor: pointer; font-weight: 700; list-style: none; text-align: center; }
+#${PANEL_ID} summary::-webkit-details-marker { display: none; }
+#${PANEL_ID} .who { margin: 6px 0 8px; color: #7a6c5d; font-size: 12px; }
+#${PANEL_ID} .stack { display: flex; flex-direction: column; gap: 6px; }
+#${PANEL_ID} label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#${PANEL_ID} select, #${PANEL_ID} input { font: inherit; color: inherit; background: #fff;
+  border: 1.5px solid #2b2622; border-radius: 6px; padding: 2px 6px; }
+#${PANEL_ID} button { font: inherit; color: inherit; text-align: left; cursor: pointer;
+  background: #f6ecda; border: 1.5px solid #2b2622; border-radius: 8px; padding: 5px 8px; }
+#${PANEL_ID} button:hover { background: #efe1c6; }
+#${PANEL_ID} button.danger { color: #d9452b; border-color: #d9452b; background: #fff; }
+`;
+
 const panel = () => {
+  // Vite hot reload runs this module again: keep a single panel.
+  document.getElementById(PANEL_ID)?.remove();
+  if (!document.getElementById(`${PANEL_ID}-css`)) {
+    const style = document.createElement('style');
+    style.id = `${PANEL_ID}-css`;
+    style.textContent = PANEL_CSS;
+    document.head.appendChild(style);
+  }
   const box = document.createElement('details');
-  box.style.cssText =
-    'position:fixed;left:50%;top:4px;transform:translateX(-50%);z-index:9998;opacity:.92;background:#fffdf7;color:#2b2622;border:2px solid #2b2622;border-radius:10px;padding:4px 8px;font:12px Fredoka,sans-serif;max-width:240px';
+  box.id = PANEL_ID;
   const go = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(location.search);
     for (const [k, v] of Object.entries(changes)) {
@@ -73,9 +102,9 @@ const panel = () => {
     const res = await fetch(path, { method: 'POST' });
     return res.json();
   };
-  box.innerHTML = `<summary style="cursor:pointer;font-weight:700">Dev</summary>
-    <div style="padding-top:4px">u/${user}${day ? ` · ${day}` : ''}</div>
-    <div style="display:flex;flex-direction:column;gap:4px;padding:6px 0">
+  box.innerHTML = `<summary>Dev menu</summary>
+    <div class="who">Playing as u/${user}${day ? ` · ${day}` : ''}</div>
+    <div class="stack">
       <label>Player <select data-k="user">${[
         'local_bagger',
         'alice',
@@ -91,7 +120,7 @@ const panel = () => {
       <button data-a="seed">Seed 3 community receipts</button>
       <button data-a="elect">Run the midnight election</button>
       <button data-a="progress">Forget my local progress</button>
-      <button data-a="reset">Reset all server data</button>
+      <button data-a="reset" class="danger">Reset all server data</button>
     </div>`;
   box
     .querySelector<HTMLSelectElement>('[data-k="user"]')

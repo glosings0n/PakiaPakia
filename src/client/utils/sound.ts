@@ -3,6 +3,8 @@
  * The context is created lazily on the first user gesture.
  */
 
+import type { RuleId } from '../../shared/types';
+
 const MUTE_KEY = 'pakia:muted';
 
 let ctx: AudioContext | null = null;
@@ -73,8 +75,13 @@ const tone = ({
   osc.stop(start + duration + 0.02);
 };
 
-/** Short filtered noise burst: the rustle of a paper bag. */
-const rustle = (duration = 0.09, volume = 0.22, delay = 0): void => {
+/** Short filtered noise burst: the rustle of a paper bag (or a crack, higher up). */
+const rustle = (
+  duration = 0.09,
+  volume = 0.22,
+  delay = 0,
+  pitch = 1800
+): void => {
   const ac = audio();
   if (!ac) return;
   const start = ac.currentTime + delay;
@@ -87,7 +94,7 @@ const rustle = (duration = 0.09, volume = 0.22, delay = 0): void => {
   source.buffer = buffer;
   const filter = ac.createBiquadFilter();
   filter.type = 'bandpass';
-  filter.frequency.value = 1800;
+  filter.frequency.value = pitch;
   filter.Q.value = 0.7;
   const gain = ac.createGain();
   gain.gain.value = volume;
@@ -128,7 +135,46 @@ export const sfx = {
     tone({ freq: 150, type: 'square', duration: 0.12, volume: 0.06 });
     buzz(30);
   },
-  conflict: () => {
+  /** A rule just broke: each rule has its own little sound, matching its animation. */
+  conflict: (rule?: RuleId) => {
+    buzz(20);
+    if (rule === 'fragile') {
+      rustle(0.05, 0.35, 0, 4200);
+      rustle(0.04, 0.25, 0.06, 3200);
+      return;
+    }
+    if (rule === 'temperature') {
+      tone({ freq: 900, to: 260, duration: 0.45, volume: 0.09 });
+      tone({ freq: 700, to: 300, duration: 0.2, volume: 0.06, delay: 0.25 });
+      return;
+    }
+    if (rule === 'heavy') {
+      tone({
+        freq: 120,
+        to: 55,
+        type: 'triangle',
+        duration: 0.3,
+        volume: 0.25,
+      });
+      return;
+    }
+    if (rule === 'upright') {
+      tone({
+        freq: 380,
+        to: 240,
+        type: 'triangle',
+        duration: 0.12,
+        volume: 0.12,
+      });
+      tone({
+        freq: 260,
+        type: 'triangle',
+        duration: 0.08,
+        volume: 0.1,
+        delay: 0.16,
+      });
+      return;
+    }
     tone({
       freq: 440,
       to: 330,

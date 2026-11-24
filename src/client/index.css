@@ -446,7 +446,95 @@ input:focus-visible {
   border-color: var(--accent);
   border-width: 3px;
   background: #fde3dc;
+}
+
+/*
+ * One short motion per broken rule, played once when the rule breaks.
+ * Later rules in this list win when an item breaks several at once.
+ */
+.piece.hit-request .piece-inner {
   animation: wobble 0.45s;
+}
+
+/* Melting: the cold item slumps a little and stays soft. */
+.piece.hit-temperature .piece-inner {
+  transform-origin: 50% 100%;
+  animation: melt 0.6s ease-out forwards;
+}
+
+/* Upright item laid down: it tips over and rocks back. */
+.piece.hit-upright .piece-inner {
+  transform-origin: 0 100%;
+  animation: tip 0.55s ease-out;
+}
+
+/* Crushed: the fragile item gets squashed by what sits above it. */
+.piece.hit-fragile .piece-inner {
+  transform-origin: 50% 100%;
+  animation: squash 0.4s ease-out;
+}
+
+/* Heavy item off the floor: it sags as if it wants to fall. */
+.piece.hit-heavy .piece-inner {
+  animation: sag 0.55s ease-in-out;
+}
+
+.crack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.crack polyline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  animation: crack 0.3s 0.1s ease-out forwards;
+}
+
+.melt {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.melt-drop {
+  position: absolute;
+  top: 30%;
+  left: 30%;
+  width: 6px;
+  height: 9px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--cold);
+  opacity: 0;
+  animation: drip 0.6s 0.1s ease-in forwards;
+}
+
+.melt-drop + .melt-drop {
+  left: 62%;
+  animation-delay: 0.3s;
+}
+
+.melt-puddle {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  width: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cold);
+  opacity: 0.85;
+  transform: translateX(-50%);
+  animation: puddle 0.5s 0.4s ease-out forwards;
 }
 
 .piece.selected .piece-inner {
@@ -761,6 +849,11 @@ input:focus-visible {
   opacity: 0.35;
   box-shadow: none;
   border-style: dashed;
+}
+
+.tile.tip .tile-art {
+  transform-origin: 0 100%;
+  animation: tip 0.55s ease-out;
 }
 
 .tile.pulse {
@@ -1174,6 +1267,92 @@ input:focus-visible {
   }
   75% {
     transform: translateX(3px) rotate(1deg);
+  }
+}
+
+@keyframes squash {
+  0% {
+    transform: scale(1, 1);
+  }
+  35% {
+    transform: scale(1.06, 0.84);
+  }
+  65% {
+    transform: scale(0.98, 1.03);
+  }
+  100% {
+    transform: scale(1, 1);
+  }
+}
+
+@keyframes sag {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  35% {
+    transform: translateY(10px);
+  }
+  60% {
+    transform: translateY(-3px);
+  }
+  80% {
+    transform: translateY(3px);
+  }
+}
+
+@keyframes tip {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  35% {
+    transform: rotate(-12deg);
+  }
+  65% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes melt {
+  0% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.05, 0.88);
+  }
+  100% {
+    transform: scale(1.03, 0.94);
+  }
+}
+
+@keyframes crack {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes drip {
+  0% {
+    opacity: 0;
+    top: 30%;
+  }
+  20% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+    top: calc(100% - 14px);
+  }
+  100% {
+    opacity: 0;
+    top: calc(100% - 14px);
+  }
+}
+
+@keyframes puddle {
+  to {
+    width: 64%;
   }
 }
 

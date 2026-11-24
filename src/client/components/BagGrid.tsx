@@ -29,6 +29,28 @@ type Props = {
   onPiecePointerDown: (event: ReactPointerEvent, i: number) => void;
 };
 
+/** Fragile item crushed: a crack draws itself across it, then stays. */
+const Crack = () => (
+  <svg
+    className="crack"
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    aria-hidden="true"
+  >
+    <polyline points="8,30 30,44 24,56 52,60 46,74 72,78 92,94" />
+    <polyline points="52,60 66,48 80,52" />
+  </svg>
+);
+
+/** Cold item next to a hot one: two drops fall and leave a puddle. */
+const Melt = () => (
+  <span className="melt" aria-hidden="true">
+    <span className="melt-drop" />
+    <span className="melt-drop" />
+    <span className="melt-puddle" />
+  </span>
+);
+
 /** The 5x5 paper bag. Row 0 is the top, the last row is the floor. */
 export const BagGrid = ({
   puzzle,
@@ -94,10 +116,11 @@ export const BagGrid = ({
           if (!id) return null;
           const { w, h } = footprint(id, p.rot);
           const broken = conflicts.get(p.i);
+          const hits = broken ? broken.map((rule) => ` hit-${rule}`) : [];
           return (
             <div
               key={p.i}
-              className={`piece${broken ? ' conflict' : ''}${lastPlaced === p.i ? ' dropped' : ''}`}
+              className={`piece${broken ? ' conflict' : ''}${hits.join('')}${lastPlaced === p.i ? ' dropped' : ''}`}
               style={{
                 left: p.c * cell,
                 top: p.r * cell,
@@ -112,6 +135,8 @@ export const BagGrid = ({
               <div className="piece-inner">
                 <ItemArt id={id} rot={p.rot} />
                 <TagBadges id={id} />
+                {broken?.includes('fragile') && <Crack />}
+                {broken?.includes('temperature') && <Melt />}
                 {broken && <span className="alert-badge">!</span>}
               </div>
             </div>
